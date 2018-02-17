@@ -1,2 +1,2 @@
 # MiscProjects
-Other robot projects. Testing individual feature, archived code, etc.
+Other robot projects. Testing individual features, archived code, etc.
