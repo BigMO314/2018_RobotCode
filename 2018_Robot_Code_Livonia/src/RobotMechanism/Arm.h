@@ -45,9 +45,11 @@ namespace RobotMechanism{
 		void SetArmPower(float power)	{ mtr_Angle_1->Set(ControlMode::PercentOutput, power); }
 
 		void SetWinchPower(float power){
+			if(lim_Shooter->Get()) power = 0.0;
 			mtr_Winch_1->Set(power);
 			mtr_Winch_2->Set(power);
 		};
+
 		void ConfigureArmPID(double p, double i, double d){
 			mtr_Angle_1->Config_kP(0, p, 0.0);
 			mtr_Angle_1->Config_kI(0, i, 0.0);
@@ -64,6 +66,7 @@ namespace RobotMechanism{
 		}
 
 		void GoToAngle(double angle){
+			if(!Dashboard.Misc.TuningMode.Get()) ConfigureArmPID(0.75, 0.0, 20.0);
 			m_Target = angle;
 			angle /= Configuration::Robot::Arm::DegreesPerCount;
 			mtr_Angle_1->Set(ControlMode::Position, angle);
@@ -72,34 +75,44 @@ namespace RobotMechanism{
 
 		enum class PointPosition{
 			kForwardCollect,
-			kForwardShoot,
+			kForwardMidCollect,
+			kForwardSwitch,
+			kForwardScale,
 			kUp,
-			kReverseShoot,
+			kReverseScale,
+			kReverseSwitch,
+			kReverseMidCollect,
 			kReverseCollect
 		};
 
 		void Point(PointPosition pos){
 			switch(pos){
-				case PointPosition::kForwardCollect:	GoToAngle(95.0); 	break;
-				case PointPosition::kForwardShoot:		GoToAngle(45.0); 	break;
+				case PointPosition::kForwardCollect:	GoToAngle(97.0); 	break;
+				case PointPosition::kForwardMidCollect:	GoToAngle(75.0); 	break;
+				case PointPosition::kForwardSwitch:		GoToAngle(45.0); 	break;
+				case PointPosition::kForwardScale:		GoToAngle(10.0);	break;
 				case PointPosition::kUp:				GoToAngle(0.0); 	break;
-				case PointPosition::kReverseShoot:		GoToAngle(-45.0); 	break;
-				case PointPosition::kReverseCollect:	GoToAngle(-95.0); 	break;
+				case PointPosition::kReverseScale:		GoToAngle(-10.0);	break;
+				case PointPosition::kReverseSwitch:		GoToAngle(-45.0); 	break;
+				case PointPosition::kReverseMidCollect:	GoToAngle(-75.0); 	break;
+				case PointPosition::kReverseCollect:	GoToAngle(-97.0); 	break;
+
 			}
 		}
 
 		void SetIntakePower(float power) { m_IntakePower = power; }
 
-		void EnableIntake()		{ SetIntakePower(-0.75);	} //start it
-		void ReverseIntake()	{ SetIntakePower(0.5);	} //shoot things out
+		void EnableIntake()		{ SetIntakePower(-0.6);	} //start it
+		void ShootIntake()		{ SetIntakePower(1.0); }
+		void ReverseIntake()	{ SetIntakePower(0.3);	} //shoot things out
 		void DisableIntake()	{ SetIntakePower(0.0);	} //stop intake
 
 		void EnableWinch() { SetWinchPower(1.0); }
 		void DisableWinch() { SetWinchPower(0.0); }
 
-		void EngageWinch() { sol_Winch->Set(true); }
+		void EngageWinch() { sol_Winch->Set(false); }
 
-		void ReleaseWinch() { sol_Winch->Set(false); }
+		void ReleaseWinch() { sol_Winch->Set(true); }
 
 		void Shoot() {
 			tmr_Winch.Reset();
@@ -108,20 +121,20 @@ namespace RobotMechanism{
 		}
 
 		void Update() {
-			ConfigureArmPID(Dashboard.Arm.Angle.P.Get(), Dashboard.Arm.Angle.I.Get(), Dashboard.Arm.Angle.D.Get());
+			if(Dashboard.Misc.TuningMode.Get()) ConfigureArmPID(Dashboard.Arm.Angle.P.Get(), Dashboard.Arm.Angle.I.Get(), Dashboard.Arm.Angle.D.Get());
 			if(fabs((mtr_Angle_1->GetSelectedSensorPosition(0) * Configuration::Robot::Arm::DegreesPerCount) - m_Target) > m_Tolerance) { tmr_AnglePID.Reset(); tmr_AnglePID.Start(); }
-
-			if (tmr_Winch.Get() < 1.0 && m_Shooting) {
+			if (tmr_Winch.Get() < 0.25 && m_Shooting) {
 				ReleaseWinch();
-				DisableWinch();
-				ReverseIntake();
+				EnableWinch();
+				frc::Wait(0.12);
+				ShootIntake();
 			}
 			else {
 				m_Shooting = false;
 				if(lim_Shooter->Get()) DisableWinch();
 				else EnableWinch();
+				EngageWinch();
 			}
-
 			mtr_L_Intake->Set(m_IntakePower);
 			mtr_R_Intake->Set(m_IntakePower);
 			Dashboard.Arm.Angle.Angle.Set(mtr_Angle_1->GetSelectedSensorPosition(0)  * Configuration::Robot::Arm::DegreesPerCount);

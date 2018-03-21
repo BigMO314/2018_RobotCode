@@ -7,13 +7,14 @@
 namespace RobotMechanism{
 	class Drivetrain{
 	public:
-		Drivetrain(TalonSRX *mtr_L_Drive_1, TalonSRX *mtr_R_Drive_1, WPILib::ADXRS450_Gyro *gyr_DriveAngle){
-			this->mtr_L_Drive_1		= mtr_L_Drive_1;
-			this->mtr_R_Drive_1		= mtr_R_Drive_1;
-			this->gyr_DriveAngle	= gyr_DriveAngle;
+		Drivetrain(TalonSRX *mtr_L_Drive_1, TalonSRX *mtr_R_Drive_1, WPILib::ADXRS450_Gyro *gyr_DriveAngle, MOLib::Vision::LimeLight *lml_DriveLimeLight){
+			this->mtr_L_Drive_1			= mtr_L_Drive_1;
+			this->mtr_R_Drive_1			= mtr_R_Drive_1;
+			this->gyr_DriveAngle		= gyr_DriveAngle;
+			this->lml_DriveLimeLight	= lml_DriveLimeLight;
 
 			this->pid_DriveAngle	= new MOLib::PID::GyrLoop(gyr_DriveAngle);
-			pid_DriveAngle->SetOutputRange(-1.0, 1.0);
+			pid_DriveAngle->SetOutputRange(-0.75, 0.75);
 			pid_DriveAngle->SetTargetTime(0.1);
 			pid_DriveAngle->SetAbsoluteTolerance(0.0);
 
@@ -22,11 +23,17 @@ namespace RobotMechanism{
 			pid_DriveDistance->SetTargetTime(0.2);
 			pid_DriveDistance->SetAbsoluteTolerance(200);
 
+			this->pid_DriveLimeLight = new MOLib::PID::LimeLoop(new MOLib::Vision::LimeLight(0));
+			pid_DriveLimeLight->SetOutputRange(-0.75, 0.75);
+			pid_DriveLimeLight->SetTargetTime(0.1);
+			pid_DriveLimeLight->SetAbsoluteTolerance(0.0);
+
 			pid_DriveAngle->Disable();
 			pid_DriveDistance->Disable();
 		};
 		~Drivetrain(){};
 
+		//TODO Add overloads for ConfigScale
 		void ConfigScale(double lf, double rf, double lr, double rr){
 			mtr_L_Drive_1->ConfigPeakOutputForward(lf, 0);
 			mtr_R_Drive_1->ConfigPeakOutputForward(rf, 0);
@@ -63,7 +70,9 @@ namespace RobotMechanism{
 
 		void ConfigureAnglePID(double P, double I, double D) { pid_DriveAngle->SetPID(P, I, D); }
 		void GoToAngle(double angle, bool reset = true) {
-			pid_DriveAngle->SetPID(0.0215, 0.0, 0.024);
+			DisableLimeLightPID();
+			DisableDistancePID();
+			if(!Dashboard.Misc.TuningMode.Get()) pid_DriveAngle->SetPID(0.0215, 0.0, 0.024);
 			pid_DriveAngle->SetSetpoint(angle);
 			pid_DriveAngle->SetAbsoluteTolerance(0.5);
 			pid_DriveAngle->Enable();
@@ -76,10 +85,27 @@ namespace RobotMechanism{
 		double GetAngle() { return gyr_DriveAngle->GetAngle(); }
 		void DisableAnglePID() { pid_DriveAngle->Disable(); }
 
+		void ConfigureLimeLightPID(double P, double I, double D) { pid_DriveLimeLight->SetPID(P, I, D); }
+		void GoToCube(double distance, bool reset = true) {
+			DisableAnglePID();
+			if (!Dashboard.Misc.TuningMode.Get()) pid_DriveLimeLight->SetPID(0.0215, 0.0, 0.024);
+			pid_DriveLimeLight->Enable();
+			pid_DriveDistance->Enable();
+			pid_DriveLimeLight->SetSetpoint(0);
+			pid_DriveDistance->SetSetpoint(distance / m_DistancePerPulse);
+			if (reset) pid_DriveDistance->ResetSource();
+		}
+		bool IsLimeLightPIDEnabled() { return pid_DriveLimeLight->IsEnabled(); }
+		bool IsAtTarget() { return pid_DriveLimeLight->OnTarget(); }
+		void DisableLimeLightPID() { pid_DriveLimeLight->Disable(); }
+
 		void ConfigureDistancePID(double P, double I, double D) { pid_DriveDistance->SetPID(P, I, D);}
 		void GoToDistance(double distance, bool reset = true) {
-			pid_DriveAngle->SetPID(0.024, 0.0, 0.03);
-			pid_DriveDistance->SetPID(0.00015, 0.0, 0.00025);
+			DisableLimeLightPID();
+			if(!Dashboard.Misc.TuningMode.Get()){
+				pid_DriveAngle->SetPID(0.024, 0.0, 0.03);
+				pid_DriveDistance->SetPID(0.00015, 0.0, 0.00025);
+			}
 			pid_DriveDistance->SetSetpoint(distance / m_DistancePerPulse);
 			pid_DriveAngle->SetSetpoint(0.0);
 			pid_DriveAngle->SetAbsoluteTolerance(0.0);
@@ -98,8 +124,14 @@ namespace RobotMechanism{
 		void DisableDistancePID() { pid_DriveDistance->Disable(); pid_DriveAngle->Disable(); }
 		void ConfigureDistanceOutputRange(float minimum,float maximum) {pid_DriveDistance->SetOutputRange(minimum,maximum); }
 
+		void EnableLight() { lml_DriveLimeLight->EnableLight(); }
+		void DisableLight() { lml_DriveLimeLight->DisableLight(); }
+
 		void Update() {
-			//ConfigureDistancePID(Dashboard.Drivetrain.Distance.P.Get(), Dashboard.Drivetrain.Distance.I.Get(), Dashboard.Drivetrain.Distance.D.Get());
+			if(Dashboard.Misc.TuningMode.Get()) {
+				ConfigureDistancePID(Dashboard.Drivetrain.Distance.P.Get(), Dashboard.Drivetrain.Distance.I.Get(), Dashboard.Drivetrain.Distance.D.Get());
+				ConfigureAnglePID(Dashboard.Drivetrain.Angle.P.Get(), Dashboard.Drivetrain.Angle.I.Get(), Dashboard.Drivetrain.Angle.D.Get());
+			}
 
 			Dashboard.Drivetrain.Angle.Angle.Set(GetAngle());
 			Dashboard.Drivetrain.Angle.Enabled.Set(IsAnglePIDEnabled());
@@ -110,7 +142,14 @@ namespace RobotMechanism{
 			Dashboard.Drivetrain.Distance.Enabled.Set(IsDistancePIDEnabled());
 			Dashboard.Drivetrain.Distance.OnTarget.Set(IsAtDistance());
 
-			if(IsDistancePIDEnabled()){
+			//if(Dashboard.Vision.LightEnabled.Get()) lml_DriveLimeLight->EnableLight();
+			//else lml_DriveLimeLight->DisableLight();
+
+			if(IsLimeLightPIDEnabled()) {
+				if (IsAtTarget()) pid_DriveLimeLight->Disable();
+				SetDrive(pid_DriveDistance->Get() + pid_DriveLimeLight->Get(), pid_DriveDistance->Get() - pid_DriveLimeLight->Get());
+			}
+			else if(IsDistancePIDEnabled()){
 				ConfigureAnglePID(Dashboard.Drivetrain.Angle.P.Get(), Dashboard.Drivetrain.Angle.I.Get(), Dashboard.Drivetrain.Angle.D.Get());
 				if(fabs(GetAngle()) > m_MaxError) m_MaxError = fabs(GetAngle());
 				if(IsAtDistance()) { pid_DriveDistance->Disable(); pid_DriveAngle->Disable(); }
@@ -132,8 +171,11 @@ namespace RobotMechanism{
 
 		WPILib::ADXRS450_Gyro		*gyr_DriveAngle;
 
+		MOLib::Vision::LimeLight	*lml_DriveLimeLight;
+
 		MOLib::PIDLoop	*pid_DriveAngle;
 		MOLib::PIDLoop	*pid_DriveDistance;
+		MOLib::PIDLoop	*pid_DriveLimeLight;
 
 
 		WPILib::Timer	tmr_AnglePID;

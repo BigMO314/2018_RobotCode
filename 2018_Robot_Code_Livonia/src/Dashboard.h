@@ -4,7 +4,7 @@
 
 struct {
 	struct {
-		MOLib::Dashboard::Indicator	Inverted{"Drivetrain/Inverted"};
+		MOLib::Dashboard::Number		LeftScale{"Drivetrain/LeftScale"};
 		struct {
 
 			MOLib::Dashboard::Number	P{"Drivetrain/Distance/P"};
@@ -26,11 +26,10 @@ struct {
 			MOLib::Dashboard::Indicator OnTarget{"Drivetrain/Angle/OnTarget"};
 			MOLib::Dashboard::Number	MaxError{"Drivetrain/Angle/Max Error"};
 		} Angle;
-
 	} Drivetrain;
 
 	struct {
-		MOLib::Dashboard::String	AutonStage{"Autonomous/AutonStage"};
+		//If we have any
 	} Autonomous;
 	struct {
 		struct {
@@ -41,5 +40,16 @@ struct {
 			MOLib::Dashboard::Indicator Enabled{"Arm/Angle/Enabled"};
 			MOLib::Dashboard::Indicator OnTarget{"Arm/Angle/OnTarget"};
 		} Angle;
+		MOLib::Dashboard::Indicator		ShooterLim{"Arm/ShooterLim"};
+
 	} Arm;
+
+	struct {
+		MOLib::Dashboard::Checkbox		LightEnabled{"Vision/LightEnabled"};
+	} Vision;
+
+	struct {
+		MOLib::Dashboard::Checkbox		TuningMode{"Misc/TuningMode"};
+		MOLib::Dashboard::Boolean		RunDistance{"Misc/RunDistance"};
+	} Misc;
 } Dashboard;
