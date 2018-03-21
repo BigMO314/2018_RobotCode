@@ -2087,7 +2087,7 @@ namespace ControlPeriod{
 			case 6:
 				tmr_TimeOut.Reset();
 				rbt_Arm->Shoot();
-				AutonStage++;
+				AutonStage++;4
 				break;
 			}
 		}
