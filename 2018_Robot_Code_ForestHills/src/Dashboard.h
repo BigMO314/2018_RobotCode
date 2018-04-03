@@ -26,6 +26,15 @@ struct {
 			MOLib::Dashboard::Indicator OnTarget{"Drivetrain/Angle/OnTarget"};
 			MOLib::Dashboard::Number	MaxError{"Drivetrain/Angle/Max Error"};
 		} Angle;
+
+		struct {
+			MOLib::Dashboard::Number	P{"Drivetrain/LimeLight/P"};
+			MOLib::Dashboard::Number	I{"Drivetrain/LimeLight/I"};
+			MOLib::Dashboard::Number	D{"Drivetrain/LimeLight/D"};
+			MOLib::Dashboard::Number	Offset{"Drivetrain/LimeLight/Offset"};
+			MOLib::Dashboard::Indicator	Enabled{"Drivetrain/LimeLight/Enabled"};
+			MOLib::Dashboard::Indicator	OnTarget{"Drivetrain/LimeLight/OnTarget"};
+		} LimeLight;
 	} Drivetrain;
 
 	struct {
@@ -50,6 +59,8 @@ struct {
 
 	struct {
 		MOLib::Dashboard::Checkbox		TuningMode{"Misc/TuningMode"};
+		MOLib::Dashboard::Checkbox		TestingMode{"Misc/TestingMode"};
 		MOLib::Dashboard::Boolean		RunDistance{"Misc/RunDistance"};
+		MOLib::Dashboard::Indicator		IsCompBot{"Misc/IsCompBot"};
 	} Misc;
 } Dashboard;

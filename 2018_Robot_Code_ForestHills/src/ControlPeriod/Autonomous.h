@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 #include "MOLib.h"
 #include "Dashboard.h"
 #include "Configuration/Goal.h"
@@ -14,26 +15,27 @@ namespace ControlPeriod{
 			this->rbt_Drivetrain	= rbt_Drivetrain;
 			this->rbt_Arm			= rbt_Arm;
 
-			chs_Auton.AddDefault("Do Nothing",AutonStates::kDoNothing);
-			chs_Auton.AddObject("Cross Line",AutonStates::kCrossLine);
-			chs_Auton.AddObject("Switch",AutonStates::kSwitch);
-			chs_Auton.AddObject("SwitchScale",AutonStates::kSwitchScale);
-			chs_Auton.AddObject("SwitchExchange",AutonStates::kSwitchExchange);
-			chs_Auton.AddObject("1XScale",AutonStates::k1XScale);
-			chs_Auton.AddObject("2XScale",AutonStates::k2XScale);
-			chs_Auton.AddObject("3XScale",AutonStates::k3XScale);
-			chs_Auton.AddObject("4XScale",AutonStates::k4XScale);
+			chs_Path.AddDefault("Do Nothing",AutonStates::kDoNothing);
+			chs_Path.AddObject("Cross Line",AutonStates::kCrossLine);
+			chs_Path.AddObject("Switch",AutonStates::kSwitch);
+			chs_Path.AddObject("2xSwitch", AutonStates::k2xSwitch);
+//			chs_Path.AddObject("SwitchScale",AutonStates::kSwitchScale);
+//			chs_Path.AddObject("SwitchExchange",AutonStates::kSwitchExchange);
+			chs_Path.AddObject("1XScale",AutonStates::k1XScale);
+			chs_Path.AddObject("2XScale",AutonStates::k2XScale);
+//			chs_Path.AddObject("3XScale",AutonStates::k3XScale);
+//			chs_Path.AddObject("4XScale",AutonStates::k4XScale);
+			chs_Path.AddObject("SameSide", AutonStates::kSameSide);
 
 			chs_Position.AddObject("Right", StartingPosition::kRight);
 			chs_Position.AddObject("Center", StartingPosition::kCenter);
 			chs_Position.AddObject("Left", StartingPosition::kLeft);
-
 		}
 		~Autonomous();
 
 		void AutonInit(){
 			AutonStage			= 0;
-			m_ChosenState		= chs_Auton.GetSelected();
+			m_ChosenState		= chs_Path.GetSelected();
 			m_SelectedPosition 	= chs_Position.GetSelected();
 			rbt_Drivetrain->ResetDistance();
 			rbt_Drivetrain->ResetAngle();
@@ -68,7 +70,7 @@ namespace ControlPeriod{
 				case 0:
 					tmr_TimeOut.Reset();
 					tmr_TimeOut.Start();
-					rbt_Drivetrain->GoToDistance(151.5);
+					rbt_Drivetrain->GoToDistance(150.0);
 					AutonStage++;
 					break;
 				case 1:
@@ -179,7 +181,7 @@ namespace ControlPeriod{
 			case 0:
 				tmr_TimeOut.Reset();
 				tmr_TimeOut.Start();
-				rbt_Drivetrain->GoToDistance(148.5);
+				rbt_Drivetrain->GoToDistance(150.0);
 				AutonStage++;
 				break;
 			case 1:
@@ -289,46 +291,54 @@ namespace ControlPeriod{
 
 		void CSt_LSw(){
 			switch(AutonStage){
-				case 1:
+				case 0:
 					tmr_TimeOut.Reset();
 					tmr_TimeOut.Start();
-					rbt_Drivetrain->GoToDistance(37.5);
+					rbt_Arm->Point(RobotMechanism::Arm::PointPosition::kForwardSwitch);
+					rbt_Drivetrain->GoToDistance(49.5);
 					AutonStage++;
 					break;
-				case 2:
+				case 1:
 					if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
 					break;
-				case 3:
+				case 2:
 					tmr_TimeOut.Reset();
 					rbt_Drivetrain->GoToAngle(-90.0);
 					AutonStage++;
 					break;
-				case 4:
+				case 3:
 					if(rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
 					break;
-				case 5:
+				case 4:
 					tmr_TimeOut.Reset();
-					rbt_Drivetrain->GoToDistance(130);
+					rbt_Drivetrain->GoToDistance(60.0);
 					AutonStage++;
 					break;
-				case 6:
+				case 5:
 					if(rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
 					break;
-				case 7:
+				case 6:
 					tmr_TimeOut.Reset();
 					rbt_Drivetrain->GoToAngle(90.0);
 					AutonStage++;
 					break;
-				case 8:
+				case 7:
 					if(rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
 					break;
-				case 9:
+				case 8:
 					tmr_TimeOut.Reset();
-					rbt_Arm->Point(RobotMechanism::Arm::PointPosition::kForwardSwitch);
+					rbt_Drivetrain->GoToDistance(90.0);
+					AutonStage++;
+					break;
+				case 9:
+					if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
+					break;
+				case 10:
+					tmr_TimeOut.Reset();
 					rbt_Arm->ReverseIntake();
 					AutonStage++;
 					break;
-				case 10:
+				case 11:
 					if(tmr_TimeOut.Get() > 2.0) AutonStage++;
 					break;
 				default:
@@ -342,6 +352,7 @@ namespace ControlPeriod{
 				case 0:
 					tmr_TimeOut.Reset();
 					tmr_TimeOut.Start();
+					rbt_Arm->Point(RobotMechanism::Arm::PointPosition::kForwardSwitch);
 					rbt_Drivetrain->GoToDistance(22.5);
 					AutonStage++;
 					break;
@@ -358,7 +369,7 @@ namespace ControlPeriod{
 					break;
 				case 4:
 					tmr_TimeOut.Reset();
-					rbt_Drivetrain->GoToDistance(80);
+					rbt_Drivetrain->GoToDistance(96.0);
 					AutonStage++;
 					break;
 				case 5:
@@ -366,19 +377,205 @@ namespace ControlPeriod{
 					break;
 				case 6:
 					tmr_TimeOut.Reset();
-					rbt_Arm->Point(RobotMechanism::Arm::PointPosition::kForwardSwitch);
+					rbt_Arm->ReverseIntake();
 					AutonStage++;
 					break;
 				case 7:
-					if(rbt_Arm->IsAtAngle() || tmr_TimeOut.Get() > 2.0) AutonStage++;
+					if (tmr_TimeOut.Get() > 2.0) AutonStage++;
+					break;
+				default:
+					DoNothing();
+					break;
+			}
+		}
+
+		void CSt_LSw_2x() {
+			switch(AutonStage){
+				case 0:
+					tmr_TimeOut.Reset();
+					tmr_TimeOut.Start();
+					rbt_Arm->Point(RobotMechanism::Arm::PointPosition::kForwardSwitch);
+					rbt_Drivetrain->GoToDistance(49.5);
+					AutonStage++;
+					break;
+				case 1:
+					if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
+					break;
+				case 2:
+					tmr_TimeOut.Reset();
+					rbt_Drivetrain->GoToAngle(-90.0);
+					AutonStage++;
+					break;
+				case 3:
+					if(rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
+					break;
+				case 4:
+					tmr_TimeOut.Reset();
+					rbt_Drivetrain->GoToDistance(60.0);
+					AutonStage++;
+					break;
+				case 5:
+					if(rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
+					break;
+				case 6:
+					tmr_TimeOut.Reset();
+					rbt_Drivetrain->GoToAngle(90.0);
+					AutonStage++;
+					break;
+				case 7:
+					if(rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
 					break;
 				case 8:
+					tmr_TimeOut.Reset();
+					rbt_Drivetrain->GoToDistance(90.0);
+					AutonStage++;
+					break;
+				case 9:
+					if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
+					break;
+				case 10:
 					tmr_TimeOut.Reset();
 					rbt_Arm->ReverseIntake();
 					AutonStage++;
 					break;
-				case 9:
+				case 11:
+					if(tmr_TimeOut.Get() > 2.0) AutonStage++;
+					break;
+				case 12:
+					tmr_TimeOut.Reset();
+					rbt_Drivetrain->GoToDistance(-17.0);
+					AutonStage++;
+					break;
+				case 13:
+					if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
+					break;
+				case 14:
+					tmr_TimeOut.Reset();
+					rbt_Arm->Point(rbt_Arm->PointPosition::kForwardCollect);
+					rbt_Drivetrain->GoToAngle(76.0);
+					AutonStage++;
+					break;
+				case 15:
+					if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
+					break;
+				case 16:
+					tmr_TimeOut.Reset();
+					rbt_Drivetrain->GoToDistance(18.0);
+					rbt_Arm->EnableIntake();
+					AutonStage++;
+					break;
+				case 17:
+					if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
+					break;
+				case 18:
+					tmr_TimeOut.Reset();
+					rbt_Drivetrain->GoToAngle(-100.0);
+					rbt_Arm->Point(rbt_Arm->PointPosition::kForwardSwitch);
+					AutonStage++;
+					break;
+				case 19:
+					if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
+					break;
+				case 20:
+					tmr_TimeOut.Reset();
+					rbt_Drivetrain->GoToDistance(15.0);
+					AutonStage++;
+					break;
+				case 21:
+					if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
+					break;
+				case 22:
+					tmr_TimeOut.Reset();
+					rbt_Arm->ReverseIntake();
+					AutonStage++;
+					break;
+				case 23:
+					if (tmr_TimeOut.Get() > 1.0) { rbt_Arm->DisableIntake(); AutonStage++; }
+					break;
+				default:
+					DoNothing();
+					break;
+			}
+		}
+
+		void CSt_RSw_2x() {
+			switch(AutonStage){
+				case 0:
+					tmr_TimeOut.Reset();
+					tmr_TimeOut.Start();
+					rbt_Arm->Point(RobotMechanism::Arm::PointPosition::kForwardSwitch);
+					rbt_Drivetrain->GoToDistance(22.5);
+					AutonStage++;
+					break;
+				case 1:
+					if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
+					break;
+				case 2:
+					tmr_TimeOut.Reset();
+					rbt_Drivetrain->GoToAngle(30.0);
+					AutonStage++;
+					break;
+				case 3:
+					if(rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 2.0) AutonStage++;
+					break;
+				case 4:
+					tmr_TimeOut.Reset();
+					rbt_Drivetrain->GoToDistance(96.0);
+					AutonStage++;
+					break;
+				case 5:
+					if(rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 3.0) AutonStage++;
+					break;
+				case 6:
+					tmr_TimeOut.Reset();
+					rbt_Arm->ReverseIntake();
+					AutonStage++;
+					break;
+				case 7:
 					if (tmr_TimeOut.Get() > 2.0) AutonStage++;
+					break;
+				case 8:
+					tmr_TimeOut.Reset();
+					rbt_Arm->Point(rbt_Arm->PointPosition::kForwardCollect);
+					rbt_Drivetrain->GoToDistance(-12.0);
+					AutonStage++;
+					break;
+				case 9:
+					if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 0.7) AutonStage++;
+					break;
+				case 10:
+					tmr_TimeOut.Reset();
+					rbt_Drivetrain->GoToAngle(-70);
+					AutonStage++;
+					break;
+				case 11:
+					if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
+					break;
+				case 12:
+					tmr_TimeOut.Reset();
+					rbt_Arm->EnableIntake();
+					rbt_Drivetrain->GoToDistance(13.0);
+					AutonStage++;
+					break;
+				case 13:
+					if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
+					break;
+				case 14:
+					tmr_TimeOut.Reset();
+					rbt_Arm->Point(rbt_Arm->PointPosition::kForwardSwitch);
+					rbt_Drivetrain->GoToAngle(70.0);
+					AutonStage++;
+					break;
+				case 15:
+					if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
+					break;
+				case 16:
+					tmr_TimeOut.Reset();
+					rbt_Arm->ReverseIntake();
+					AutonStage++;
+					break;
+				case 17:
+					if (tmr_TimeOut.Get() > 1.0) { rbt_Arm->DisableIntake(); AutonStage++; }
 					break;
 				default:
 					DoNothing();
@@ -2062,7 +2259,7 @@ namespace ControlPeriod{
 				tmr_TimeOut.Reset();
 				tmr_TimeOut.Start();
 				rbt_Drivetrain->GoToDistance(309.552);
-				rbt_Arm->Point(rbt_Arm->PointPosition::kForwardScale);
+				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
 				AutonStage++;
 				break;
 			case 1:
@@ -2070,7 +2267,7 @@ namespace ControlPeriod{
 				break;
 			case 2:
 				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
+				rbt_Drivetrain->GoToAngle(-90.0);
 				AutonStage++;
 				break;
 			case 3:
@@ -2078,7 +2275,7 @@ namespace ControlPeriod{
 				break;
 			case 4:
 				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(24.0);
+				rbt_Drivetrain->GoToDistance(-8.0);
 				AutonStage++;
 				break;
 			case 5:
@@ -2087,7 +2284,10 @@ namespace ControlPeriod{
 			case 6:
 				tmr_TimeOut.Reset();
 				rbt_Arm->Shoot();
-				AutonStage++;4
+				AutonStage++;
+				break;
+			case 7:
+				if (tmr_TimeOut.Get() > 0.25) { rbt_Arm->DisableIntake(); AutonStage++; }
 				break;
 			}
 		}
@@ -2105,7 +2305,7 @@ namespace ControlPeriod{
 				break;
 			case 2:
 				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
+				rbt_Drivetrain->GoToAngle(-90.0);
 				AutonStage++;
 				break;
 			case 3:
@@ -2114,7 +2314,7 @@ namespace ControlPeriod{
 			case 4:
 				tmr_TimeOut.Reset();
 				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
-				rbt_Drivetrain->GoToDistance(238.998);
+				rbt_Drivetrain->GoToDistance(-220.998);
 				AutonStage++;
 				break;
 			case 5:
@@ -2146,10 +2346,18 @@ namespace ControlPeriod{
 				break;
 			case 12:
 				tmr_TimeOut.Reset();
-				rbt_Arm->Shoot();
+				rbt_Drivetrain->GoToDistance(-2.0);
 				AutonStage++;
 				break;
 			case 13:
+				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
+				break;
+			case 14:
+				tmr_TimeOut.Reset();
+				rbt_Arm->Shoot();
+				AutonStage++;
+				break;
+			case 15:
 				if (tmr_TimeOut.Get() > 1.5) {
 					rbt_Arm->DisableIntake();
 					AutonStage++;
@@ -2163,16 +2371,12 @@ namespace ControlPeriod{
 		}
 
 		void RSt_RSc_1x() {
-
-		}
-
-		void LSt_LSc_2x() {
 			switch(AutonStage) {
 			case 0:
 				tmr_TimeOut.Reset();
 				tmr_TimeOut.Start();
 				rbt_Drivetrain->GoToDistance(309.552);
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
+				rbt_Arm->Point(rbt_Arm->PointPosition::kForwardScale);
 				AutonStage++;
 				break;
 			case 1:
@@ -2188,131 +2392,35 @@ namespace ControlPeriod{
 				break;
 			case 4:
 				tmr_TimeOut.Reset();
-				rbt_Arm->Shoot();
+				rbt_Drivetrain->GoToDistance(-36.0);
+				AutonStage++;
 				break;
 			case 5:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
+				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
 				break;
 			case 6:
 				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kForwardCollect);
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 7:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 8:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(86.196);
-				AutonStage++;
-				break;
-			case 9:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 10:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 11:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 12:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(47.016);
-				AutonStage++;
-				break;
-			case 13:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 14:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 15:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 16:
-				tmr_TimeOut.Reset();
-				rbt_Arm->EnableIntake();
-				rbt_Drivetrain->SetDrive(0.5, 0.5);
-				break;
-			case 17:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Drivetrain->SetDrive(0, 0);
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			case 18:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
-				rbt_Drivetrain->GoToAngle(90.0);
-				break;
-			case 19:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 20:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(27.426);
-				AutonStage++;
-				break;
-			case 21:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 22:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 23:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 24:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(110);
-				AutonStage++;
-				break;
-			case 25:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 26:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 27:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 28:
-				tmr_TimeOut.Reset();
 				rbt_Arm->Shoot();
 				AutonStage++;
 				break;
-			case 29:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
+			case 7:
+				if (tmr_TimeOut.Get() > 0.25) { rbt_Arm->DisableIntake(); AutonStage++; }
 				break;
 			}
+
 		}
 
-		void LSt_RSc_2x() {
+		void LSt_LSc_2x() {
 			switch(AutonStage) {
 			case 0:
 				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
-				rbt_Drivetrain->GoToDistance(228.735);
+				tmr_TimeOut.Start();
+				rbt_Drivetrain->GoToDistance(309.552);
+				rbt_Arm->Point(rbt_Arm->PointPosition::kForwardScale);
 				AutonStage++;
 				break;
 			case 1:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 3.0) AutonStage++;
+				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 4.0) AutonStage++;
 				break;
 			case 2:
 				tmr_TimeOut.Reset();
@@ -2324,154 +2432,74 @@ namespace ControlPeriod{
 				break;
 			case 4:
 				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(230);
+				rbt_Drivetrain->GoToDistance(6.0);
 				AutonStage++;
 				break;
 			case 5:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 3.0) AutonStage++;
+				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 0.5) AutonStage++;
 				break;
 			case 6:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 7:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get()) AutonStage++;
-				break;
-			case 8:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(70.915);
-				AutonStage++;
-				break;
-			case 9:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 10:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 11:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 12:
 				tmr_TimeOut.Reset();
 				rbt_Arm->Shoot();
 				AutonStage++;
 				break;
+			case 7:
+				if (tmr_TimeOut.Get() > 0.25) { rbt_Arm->DisableIntake(); AutonStage++; }
+				break;
+			case 8:
+				tmr_TimeOut.Reset();
+				rbt_Drivetrain->GoToAngle(70.0);
+				rbt_Arm->Point(rbt_Arm->PointPosition::kForwardCollect);
+				AutonStage++;
+				break;
+			case 9:
+				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 0.7) AutonStage++;
+				break;
+			case 10:
+				tmr_TimeOut.Reset();
+				rbt_Arm->EnableIntake();
+				rbt_Drivetrain->GoToDistance(135.0);
+				AutonStage++;
+				break;
+			case 11:
+				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 3.0) {
+					AutonStage++;
+				}
+				break;
+			case 12:
+				tmr_TimeOut.Reset();
+				std::cout << rbt_Drivetrain->GetAngle() << endl;
+				rbt_Drivetrain->GoToAngle(-10 + rbt_Drivetrain->GetAngle());
+				AutonStage++;
+				break;
 			case 13:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Arm->DisableIntake();
+				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 0.5) {
 					AutonStage++;
 				}
 				break;
 			case 14:
 				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
+				rbt_Drivetrain->GoToDistance(-52.0);
 				AutonStage++;
 				break;
 			case 15:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 16:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(70.915);
-				AutonStage++;
-				break;
-			case 17:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 18:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseCollect);
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 19:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 20:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(40.75);
-				AutonStage++;
-				break;
-			case 21:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 22:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 23:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 24:
-				tmr_TimeOut.Reset();
-				rbt_Arm->EnableIntake();
-				rbt_Drivetrain->SetDrive(0.5, 0.5);
-				AutonStage++;
-				break;
-			case 25:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Drivetrain->SetDrive(0, 0);
-					rbt_Arm->DisableIntake();
+				if (tmr_TimeOut.Get() > 0.2) rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
+				if ((rbt_Drivetrain->IsAtDistance() && rbt_Arm->IsAtAngle()) || tmr_TimeOut.Get() > 2.0) {
+					rbt_Arm->Shoot();
 					AutonStage++;
 				}
 				break;
-			case 26:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 27:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 29:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(40.75);
-				AutonStage++;
-				break;
-			case 30:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 31:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 32:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 33:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(70.915);
-				AutonStage++;
-				break;
-			case 34:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 35:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 36:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 37:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Shoot();
-				AutonStage++;
-				break;
-			case 38:
-				if (tmr_TimeOut.Get() > 1.5) {
+			case 16:
+				if (tmr_TimeOut.Get() > 0.5) {
 					rbt_Arm->DisableIntake();
 					AutonStage++;
 				}
 				break;
 			}
+		}
+
+		void LSt_RSc_2x() {
+
 		}
 
 		void RSt_LSc_2x() {
@@ -2483,12 +2511,13 @@ namespace ControlPeriod{
 		}
 
 		void LSt_LSc_3x() {
+
 			switch(AutonStage) {
 			case 0:
 				tmr_TimeOut.Reset();
 				tmr_TimeOut.Start();
 				rbt_Drivetrain->GoToDistance(309.552);
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
+				rbt_Arm->Point(rbt_Arm->PointPosition::kForwardScale);
 				AutonStage++;
 				break;
 			case 1:
@@ -2496,7 +2525,7 @@ namespace ControlPeriod{
 				break;
 			case 2:
 				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
+				rbt_Drivetrain->GoToAngle(90.0);
 				AutonStage++;
 				break;
 			case 3:
@@ -2504,78 +2533,85 @@ namespace ControlPeriod{
 				break;
 			case 4:
 				tmr_TimeOut.Reset();
-				rbt_Arm->Shoot();
+				rbt_Drivetrain->GoToDistance(6.0);
+				AutonStage++;
 				break;
 			case 5:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Arm->DisableIntake();
+				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
+				break;
+			case 6:
+				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
+				break;
+			case 7:
+				tmr_TimeOut.Reset();
+				rbt_Arm->Shoot();
+				AutonStage++;
+				break;
+			case 8:
+				if (tmr_TimeOut.Get() > 0.25) { rbt_Arm->DisableIntake(); AutonStage++; }
+				break;
+			case 9:
+				tmr_TimeOut.Reset();
+				rbt_Drivetrain->GoToAngle(65.0);
+				rbt_Arm->Point(rbt_Arm->PointPosition::kForwardCollect);
+				AutonStage++;
+				break;
+			case 10:
+				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 0.7) AutonStage++;
+				break;
+			case 11:
+				tmr_TimeOut.Reset();
+				rbt_Arm->EnableIntake();
+				rbt_Drivetrain->GoToCube(130.0);
+				AutonStage++;
+				break;
+			case 12:
+				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 3.0) {
 					AutonStage++;
 				}
 				break;
-			case 6:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kForwardCollect);
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 7:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 8:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(86.196);
-				AutonStage++;
-				break;
-			case 9:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 10:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 11:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 12:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(47.016);
-				AutonStage++;
-				break;
 			case 13:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
+				tmr_TimeOut.Reset();
+				rbt_Drivetrain->GoToAngle(30);
+				AutonStage++;
 				break;
 			case 14:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
+				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 0.5) {
+					AutonStage++;
+				}
 				break;
 			case 15:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
+				tmr_TimeOut.Reset();
+				rbt_Drivetrain->GoToDistance(-50.0);
+				AutonStage++;
 				break;
 			case 16:
-				tmr_TimeOut.Reset();
-				rbt_Arm->EnableIntake();
-				rbt_Drivetrain->SetDrive(0.5, 0.5);
+				if (tmr_TimeOut.Get() > 0.2) rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
+				if ((rbt_Drivetrain->IsAtDistance() && rbt_Arm->IsAtAngle()) || tmr_TimeOut.Get() > 2.0) {
+					rbt_Arm->Shoot();
+					AutonStage++;
+				}
 				break;
 			case 17:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Drivetrain->SetDrive(0, 0);
+				tmr_TimeOut.Reset();
+				if (tmr_TimeOut.Get() > 2.0) {
 					rbt_Arm->DisableIntake();
 					AutonStage++;
 				}
 				break;
 			case 18:
 				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
-				rbt_Drivetrain->GoToAngle(90.0);
+				rbt_Drivetrain->GoToAngle(20.0);
+				rbt_Arm->Point(rbt_Arm->PointPosition::kForwardCollect);
+				AutonStage++;
 				break;
 			case 19:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
+				if ((rbt_Drivetrain->IsAtAngle() && rbt_Arm->IsAtAngle()) || tmr_TimeOut.Get() > 0.5) AutonStage++;
 				break;
 			case 20:
 				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(27.426);
+				rbt_Arm->EnableIntake();
+				rbt_Drivetrain->GoToCube(80.0);
 				AutonStage++;
 				break;
 			case 21:
@@ -2583,139 +2619,26 @@ namespace ControlPeriod{
 				break;
 			case 22:
 				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
+				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
+				rbt_Drivetrain->GoToAngle(50);
 				AutonStage++;
 				break;
 			case 23:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
+				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 0.5) AutonStage++;
 				break;
 			case 24:
 				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(110);
+				rbt_Drivetrain->GoToDistance(-50);
 				AutonStage++;
 				break;
 			case 25:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
+				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) {
+					rbt_Arm->Shoot();
+					AutonStage++;
+				}
 				break;
 			case 26:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 27:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 28:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Shoot();
-				AutonStage++;
-				break;
-			case 29:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			case 30:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kForwardCollect);
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 31:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 32:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(86.196);
-				AutonStage++;
-				break;
-			case 33:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 34:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 35:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 36:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(66.75);
-				AutonStage++;
-				break;
-			case 37:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 38:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 39:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 40:
-				tmr_TimeOut.Reset();
-				rbt_Arm->EnableIntake();
-				rbt_Drivetrain->SetDrive(0.5, 0.5);
-				break;
-			case 41:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Drivetrain->SetDrive(0, 0);
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			case 42:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
-				rbt_Drivetrain->GoToAngle(90.0);
-				break;
-			case 43:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 44:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(66.75);
-				AutonStage++;
-				break;
-			case 45:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 46:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 47:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 48:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(110);
-				AutonStage++;
-				break;
-			case 49:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 50:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 51:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 52:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Shoot();
-				AutonStage++;
-				break;
-			case 53:
-				if (tmr_TimeOut.Get() > 1.5) {
+				if (tmr_TimeOut.Get() > 0.5) {
 					rbt_Arm->DisableIntake();
 					AutonStage++;
 				}
@@ -2724,280 +2647,7 @@ namespace ControlPeriod{
 		}
 
 		void LSt_RSc_3x() {
-			switch(AutonStage) {
-			case 0:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
-				rbt_Drivetrain->GoToDistance(228.735);
-				AutonStage++;
-				break;
-			case 1:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 3.0) AutonStage++;
-				break;
-			case 2:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 3:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 4:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(230);
-				AutonStage++;
-				break;
-			case 5:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 3.0) AutonStage++;
-				break;
-			case 6:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 7:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get()) AutonStage++;
-				break;
-			case 8:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(70.915);
-				AutonStage++;
-				break;
-			case 9:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 10:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 11:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 12:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Shoot();
-				AutonStage++;
-				break;
-			case 13:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			case 14:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 15:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 16:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(70.915);
-				AutonStage++;
-				break;
-			case 17:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 18:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseCollect);
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 19:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 20:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(40.75);
-				AutonStage++;
-				break;
-			case 21:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 22:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 23:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 24:
-				tmr_TimeOut.Reset();
-				rbt_Arm->EnableIntake();
-				rbt_Drivetrain->SetDrive(0.5, 0.5);
-				AutonStage++;
-				break;
-			case 25:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Drivetrain->SetDrive(0, 0);
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			case 26:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 27:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 29:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(40.75);
-				AutonStage++;
-				break;
-			case 30:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 31:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 32:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 33:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(70.915);
-				AutonStage++;
-				break;
-			case 34:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 35:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 36:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 37:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Shoot();
-				AutonStage++;
-				break;
-			case 38:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			case 39:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 40:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 41:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(70.915);
-				AutonStage++;
-				break;
-			case 42:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 43:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseCollect);
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 44:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 45:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(66.75);
-				AutonStage++;
-				break;
-			case 46:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 47:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 48:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 49:
-				tmr_TimeOut.Reset();
-				rbt_Arm->EnableIntake();
-				rbt_Drivetrain->SetDrive(0.5, 0.5);
-				AutonStage++;
-				break;
-			case 50:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Drivetrain->SetDrive(0, 0);
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			case 51:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 52:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 53:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(66.75);
-				AutonStage++;
-				break;
-			case 54:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 55:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 56:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 57:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(70.915);
-				AutonStage++;
-				break;
-			case 58:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 59:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 60:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 61:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Shoot();
-				AutonStage++;
-				break;
-			case 62:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			}
+
 		}
 
 		void RSt_LSc_3x() {
@@ -3009,731 +2659,12 @@ namespace ControlPeriod{
 		}
 
 		void LSt_LSc_4x() {
-			switch(AutonStage) {
-			case 0:
-				tmr_TimeOut.Reset();
-				tmr_TimeOut.Start();
-				rbt_Drivetrain->GoToDistance(309.552);
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
-				AutonStage++;
-				break;
-			case 1:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 4.0) AutonStage++;
-				break;
-			case 2:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 3:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 4:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Shoot();
-				break;
-			case 5:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			case 6:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kForwardCollect);
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 7:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 8:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(86.196);
-				AutonStage++;
-				break;
-			case 9:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 10:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 11:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 12:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(47.016);
-				AutonStage++;
-				break;
-			case 13:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 14:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 15:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 16:
-				tmr_TimeOut.Reset();
-				rbt_Arm->EnableIntake();
-				rbt_Drivetrain->SetDrive(0.5, 0.5);
-				break;
-			case 17:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Drivetrain->SetDrive(0, 0);
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			case 18:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
-				rbt_Drivetrain->GoToAngle(90.0);
-				break;
-			case 19:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 20:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(27.426);
-				AutonStage++;
-				break;
-			case 21:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 22:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 23:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 24:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(110);
-				AutonStage++;
-				break;
-			case 25:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 26:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 27:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 28:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Shoot();
-				AutonStage++;
-				break;
-			case 29:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			case 30:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kForwardCollect);
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 31:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 32:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(86.196);
-				AutonStage++;
-				break;
-			case 33:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 34:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 35:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 36:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(66.75);
-				AutonStage++;
-				break;
-			case 37:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 38:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 39:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 40:
-				tmr_TimeOut.Reset();
-				rbt_Arm->EnableIntake();
-				rbt_Drivetrain->SetDrive(0.5, 0.5);
-				break;
-			case 41:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Drivetrain->SetDrive(0, 0);
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			case 42:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
-				rbt_Drivetrain->GoToAngle(90.0);
-				break;
-			case 43:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 44:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(66.75);
-				AutonStage++;
-				break;
-			case 45:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 46:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 47:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 48:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(110);
-				AutonStage++;
-				break;
-			case 49:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 50:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 51:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 52:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Shoot();
-				AutonStage++;
-				break;
-			case 53:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			case 54:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kForwardCollect);
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 55:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 56:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(86.196);
-				AutonStage++;
-				break;
-			case 57:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 58:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 59:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 60:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(92.75);
-				AutonStage++;
-				break;
-			case 61:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 62:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 63:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 64:
-				tmr_TimeOut.Reset();
-				rbt_Arm->EnableIntake();
-				rbt_Drivetrain->SetDrive(0.5, 0.5);
-				break;
-			case 65:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Drivetrain->SetDrive(0, 0);
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			case 66:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
-				rbt_Drivetrain->GoToAngle(90.0);
-				break;
-			case 67:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 68:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(92.75);
-				AutonStage++;
-				break;
-			case 69:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 70:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 71:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 72:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(110);
-				AutonStage++;
-				break;
-			case 73:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 74:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 75:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 76:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Shoot();
-				AutonStage++;
-				break;
-			case 77:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			}
+
 		}
 
 		void LSt_RSc_4x() {
-			switch(AutonStage) {
-			case 0:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
-				rbt_Drivetrain->GoToDistance(228.735);
-				AutonStage++;
-				break;
-			case 1:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 3.0) AutonStage++;
-				break;
-			case 2:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 3:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 4:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(230);
-				AutonStage++;
-				break;
-			case 5:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 3.0) AutonStage++;
-				break;
-			case 6:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 7:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get()) AutonStage++;
-				break;
-			case 8:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(70.915);
-				AutonStage++;
-				break;
-			case 9:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 10:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 11:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 12:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Shoot();
-				AutonStage++;
-				break;
-			case 13:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			case 14:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 15:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 16:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(70.915);
-				AutonStage++;
-				break;
-			case 17:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 18:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseCollect);
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 19:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 20:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(40.75);
-				AutonStage++;
-				break;
-			case 21:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 22:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 23:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 24:
-				tmr_TimeOut.Reset();
-				rbt_Arm->EnableIntake();
-				rbt_Drivetrain->SetDrive(0.5, 0.5);
-				AutonStage++;
-				break;
-			case 25:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Drivetrain->SetDrive(0, 0);
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			case 26:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 27:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 29:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(40.75);
-				AutonStage++;
-				break;
-			case 30:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 31:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 32:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 33:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(70.915);
-				AutonStage++;
-				break;
-			case 34:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 35:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 36:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 37:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Shoot();
-				AutonStage++;
-				break;
-			case 38:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			case 39:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 40:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 41:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(70.915);
-				AutonStage++;
-				break;
-			case 42:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 43:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseCollect);
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 44:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 45:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(66.75);
-				AutonStage++;
-				break;
-			case 46:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 47:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 48:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 49:
-				tmr_TimeOut.Reset();
-				rbt_Arm->EnableIntake();
-				rbt_Drivetrain->SetDrive(0.5, 0.5);
-				AutonStage++;
-				break;
-			case 50:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Drivetrain->SetDrive(0, 0);
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			case 51:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 52:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 53:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(66.75);
-				AutonStage++;
-				break;
-			case 54:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 55:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 56:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 57:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(70.915);
-				AutonStage++;
-				break;
-			case 58:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 59:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 60:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 61:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Shoot();
-				AutonStage++;
-				break;
-			case 62:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			case 63:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 64:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 65:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(70.915);
-				AutonStage++;
-				break;
-			case 66:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 67:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseCollect);
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 68:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 69:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(92.75);
-				AutonStage++;
-				break;
-			case 70:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 71:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 72:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 73:
-				tmr_TimeOut.Reset();
-				rbt_Arm->EnableIntake();
-				rbt_Drivetrain->SetDrive(0.5, 0.5);
-				AutonStage++;
-				break;
-			case 74:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Drivetrain->SetDrive(0, 0);
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			case 75:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Point(rbt_Arm->PointPosition::kReverseScale);
-				rbt_Drivetrain->GoToAngle(90.0);
-				AutonStage++;
-				break;
-			case 76:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 77:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(92.75);
-				AutonStage++;
-				break;
-			case 78:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 79:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 80:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 1.0) AutonStage++;
-				break;
-			case 81:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToDistance(70.915);
-				AutonStage++;
-				break;
-			case 82:
-				if (rbt_Drivetrain->IsAtDistance() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 83:
-				tmr_TimeOut.Reset();
-				rbt_Drivetrain->GoToAngle(-90.0);
-				AutonStage++;
-				break;
-			case 84:
-				if (rbt_Drivetrain->IsAtAngle() || tmr_TimeOut.Get() > 2.0) AutonStage++;
-				break;
-			case 85:
-				tmr_TimeOut.Reset();
-				rbt_Arm->Shoot();
-				AutonStage++;
-				break;
-			case 86:
-				if (tmr_TimeOut.Get() > 1.5) {
-					rbt_Arm->DisableIntake();
-					AutonStage++;
-				}
-				break;
-			}
+
+
 		}
 
 		void RSt_LSc_4x() {
@@ -3777,6 +2708,16 @@ namespace ControlPeriod{
 								case Configuration::Goal::GoalOrientation::kRight: 		CSt_RSw(); 	break; //Right start right switch
 							}
 							break;
+					}
+					break;
+				case AutonStates::k2xSwitch:
+					switch(m_SelectedPosition) {
+					case StartingPosition::kCenter:
+						switch(m_SwitchSide) {
+						case Configuration::Goal::GoalOrientation::kLeft:				CSt_LSw_2x();	break;
+						case Configuration::Goal::GoalOrientation::kRight:				CSt_RSw_2x();	break;
+						}
+						break;
 					}
 					break;
 					case AutonStates::kSwitchScale:
@@ -3961,6 +2902,44 @@ namespace ControlPeriod{
 						break;
 					}
 					break;
+				case AutonStates::kSameSide:
+					switch(m_SelectedPosition) {
+					case StartingPosition::kLeft:
+						switch(m_ScaleSide) {
+						case Configuration::Goal::GoalOrientation::kLeft:
+							LSt_LSc_2x();
+							break;
+						case Configuration::Goal::GoalOrientation::kRight:
+							switch (m_SwitchSide) {
+							case Configuration::Goal::GoalOrientation::kLeft:
+								LSt_LSw();
+								break;
+							case Configuration::Goal::GoalOrientation::kRight:
+								CrossLine();
+								break;
+							}
+							break;
+						}
+						break;
+					case StartingPosition::kRight:
+						switch(m_ScaleSide) {
+						case Configuration::Goal::GoalOrientation::kRight:
+							RSt_RSc_1x();
+							break;
+						case Configuration::Goal::GoalOrientation::kLeft:
+							switch (m_SwitchSide) {
+							case Configuration::Goal::GoalOrientation::kRight:
+								RSt_RSw();
+								break;
+							case Configuration::Goal::GoalOrientation::kLeft:
+								CrossLine();
+								break;
+							}
+							break;
+						}
+						break;
+					}
+					break;
 				default: DoNothing(); break;
 			}
 		}
@@ -3973,12 +2952,14 @@ namespace ControlPeriod{
 			kDoNothing,
 			kCrossLine,
 			kSwitch,
+			k2xSwitch,
 			kSwitchScale,
 			kSwitchExchange,
 			k1XScale,
 			k2XScale,
 			k3XScale,
-			k4XScale
+			k4XScale,
+			kSameSide
 		};
 
 		enum class StartingPosition {
@@ -3997,7 +2978,7 @@ namespace ControlPeriod{
 		int AutonStage	=	0;
 
 	public:
-		WPILib::SendableChooser<AutonStates> chs_Auton;
+		WPILib::SendableChooser<AutonStates> chs_Path;
 		WPILib::SendableChooser<StartingPosition> chs_Position;
 	};
 }

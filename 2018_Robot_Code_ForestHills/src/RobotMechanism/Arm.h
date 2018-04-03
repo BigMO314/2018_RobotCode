@@ -19,6 +19,8 @@ namespace RobotMechanism{
 			this->sol_Winch				= sol_Winch;
 
 			this->lim_Shooter			= lim_Shooter;
+
+			ConfigureArmPID(0.75, 0.0, 20.0);
 		}
 		~Arm();
 
@@ -36,6 +38,13 @@ namespace RobotMechanism{
 			mtr_Angle_1->ConfigPeakOutputReverse(peakoutputreverse, 0);
 			mtr_Angle_2->ConfigPeakOutputForward(peakoutputforward, 0);
 			mtr_Angle_2->ConfigPeakOutputReverse(peakoutputreverse, 0);
+		}
+
+		void Disable() {
+			SetArmPower(0.0);
+			SetWinchPower(0.0);
+			EngageWinch();
+			SetIntakePower(0.0);
 		}
 
 		/**
@@ -77,9 +86,11 @@ namespace RobotMechanism{
 			kForwardCollect,
 			kForwardMidCollect,
 			kForwardSwitch,
+			kForwardPortal,
 			kForwardScale,
 			kUp,
 			kReverseScale,
+			kReversePortal,
 			kReverseSwitch,
 			kReverseMidCollect,
 			kReverseCollect
@@ -87,22 +98,24 @@ namespace RobotMechanism{
 
 		void Point(PointPosition pos){
 			switch(pos){
-				case PointPosition::kForwardCollect:	GoToAngle(97.0); 	break;
+				case PointPosition::kForwardCollect:	GoToAngle(99.0); 	break;
 				case PointPosition::kForwardMidCollect:	GoToAngle(75.0); 	break;
 				case PointPosition::kForwardSwitch:		GoToAngle(45.0); 	break;
+				case PointPosition::kForwardPortal:		GoToAngle(55.0);	break;
 				case PointPosition::kForwardScale:		GoToAngle(10.0);	break;
 				case PointPosition::kUp:				GoToAngle(0.0); 	break;
 				case PointPosition::kReverseScale:		GoToAngle(-10.0);	break;
+				case PointPosition::kReversePortal:		GoToAngle(-55.0);	break;
 				case PointPosition::kReverseSwitch:		GoToAngle(-45.0); 	break;
 				case PointPosition::kReverseMidCollect:	GoToAngle(-75.0); 	break;
-				case PointPosition::kReverseCollect:	GoToAngle(-97.0); 	break;
+				case PointPosition::kReverseCollect:	GoToAngle(-99.0); 	break;
 
 			}
 		}
 
 		void SetIntakePower(float power) { m_IntakePower = power; }
 
-		void EnableIntake()		{ SetIntakePower(-0.6);	} //start it
+		void EnableIntake()		{ SetIntakePower(-0.5);	} //start it
 		void ShootIntake()		{ SetIntakePower(1.0); }
 		void ReverseIntake()	{ SetIntakePower(0.3);	} //shoot things out
 		void DisableIntake()	{ SetIntakePower(0.0);	} //stop intake
@@ -111,8 +124,7 @@ namespace RobotMechanism{
 		void DisableWinch() { SetWinchPower(0.0); }
 
 		void EngageWinch() { sol_Winch->Set(false); }
-
-		void ReleaseWinch() { sol_Winch->Set(true); }
+		void DisengageWinch() { sol_Winch->Set(true); }
 
 		void Shoot() {
 			tmr_Winch.Reset();
@@ -121,46 +133,52 @@ namespace RobotMechanism{
 		}
 
 		void Update() {
-			if(Dashboard.Misc.TuningMode.Get()) ConfigureArmPID(Dashboard.Arm.Angle.P.Get(), Dashboard.Arm.Angle.I.Get(), Dashboard.Arm.Angle.D.Get());
 			if(fabs((mtr_Angle_1->GetSelectedSensorPosition(0) * Configuration::Robot::Arm::DegreesPerCount) - m_Target) > m_Tolerance) { tmr_AnglePID.Reset(); tmr_AnglePID.Start(); }
 			if (tmr_Winch.Get() < 0.25 && m_Shooting) {
-				ReleaseWinch();
+				DisengageWinch();
 				EnableWinch();
-				frc::Wait(0.12);
-				ShootIntake();
+
+				if (tmr_Winch.Get() > 0.125) ShootIntake();
 			}
 			else {
-				m_Shooting = false;
+				if(m_Shooting) DisableIntake();
+
 				if(lim_Shooter->Get()) DisableWinch();
 				else EnableWinch();
 				EngageWinch();
+
+				m_Shooting = false;
 			}
+
 			mtr_L_Intake->Set(m_IntakePower);
 			mtr_R_Intake->Set(m_IntakePower);
+
 			Dashboard.Arm.Angle.Angle.Set(mtr_Angle_1->GetSelectedSensorPosition(0)  * Configuration::Robot::Arm::DegreesPerCount);
 			Dashboard.Arm.Angle.OnTarget.Set(IsAtAngle());
 			Dashboard.Arm.Angle.Enabled.Set(IsPIDEnabled());
+
+			Dashboard.Arm.ShooterLim.Set(lim_Shooter->Get());
 		}
 
 	private:
-		TalonSRX	*mtr_Angle_1;
-		VictorSPX	*mtr_Angle_2;
-		VictorSP	*mtr_L_Intake;
-		VictorSP	*mtr_R_Intake;
+		CTRLib::TalonSRX	*mtr_Angle_1;
+		CTRLib::VictorSPX	*mtr_Angle_2;
+		WPILib::VictorSP	*mtr_L_Intake;
+		WPILib::VictorSP	*mtr_R_Intake;
 
-		float		m_IntakePower = 0;
+		float				 m_IntakePower	= 0;
 
-		double		m_Target 	= 0.0;
-		double 		m_Tolerance	= 1.0;
-		double		m_TargetTime = 0.2;
+		double				 m_Target		= 0.0;
+		double 				 m_Tolerance	= 1.0;
+		double				 m_TargetTime	= 0.2;
 
-		WPILib::Timer	tmr_AnglePID;
+		WPILib::Timer		 tmr_AnglePID;
 
-		WPILib::Timer	tmr_Winch;
+		WPILib::Timer		 tmr_Winch;
 
-		VictorSP	*mtr_Winch_1;
-		VictorSP	*mtr_Winch_2;
-		Solenoid	*sol_Winch;
+		WPILib::VictorSP	*mtr_Winch_1;
+		WPILib::VictorSP	*mtr_Winch_2;
+		WPILib::Solenoid	*sol_Winch;
 
 		WPILib::DigitalInput *lim_Shooter;
 
