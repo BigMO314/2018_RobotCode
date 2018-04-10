@@ -143,12 +143,11 @@ namespace RobotMechanism{
 			}
 			if(reset) {
 				pid_DriveDistance->ResetSource();
-				pid_DriveAngle->ResetSource();
 				m_MaxError = 0.0;
 			}
 			pid_DriveDistance->SetOutputRange(-1.0, 1.0);
 			pid_DriveDistance->SetSetpoint(distance);
-			pid_DriveAngle->SetSetpoint(0.0);
+			pid_DriveAngle->SetSetpoint(GetAngle());
 			pid_DriveAngle->SetTargetTime(0.2);
 			pid_DriveAngle->SetAbsoluteTolerance(0.0);
 			pid_DriveDistance->Enable();
@@ -197,6 +196,8 @@ namespace RobotMechanism{
 			Dashboard.Drivetrain.Distance.Measurement.Set(GetDistance());
 			Dashboard.Drivetrain.Distance.Enabled.Set(IsDistancePIDEnabled());
 			Dashboard.Drivetrain.Distance.OnTarget.Set(IsAtDistance());
+
+			Dashboard.Drivetrain.Angle.Output.Set(pid_DriveAngle->Get());
 
 			if(IsLimeLightPIDEnabled()) {
 				if (IsAtCube()) pid_DriveLimeLight->Disable();

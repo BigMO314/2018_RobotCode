@@ -28,6 +28,10 @@ namespace RobotMechanism{
 			mtr_Angle_1->SetSelectedSensorPosition(0.0, 0.0, 0.0);
 		}
 
+		float GetAngle() {
+			return mtr_Angle_1->GetSelectedSensorPosition(0) * Configuration::Robot::Arm::DegreesPerCount;
+		}
+
 		/**
 		 * @brief Sets the max speed for motors
 		 * @param peakoutputforward Max speed going forward
@@ -102,9 +106,9 @@ namespace RobotMechanism{
 				case PointPosition::kForwardMidCollect:	GoToAngle(75.0); 	break;
 				case PointPosition::kForwardSwitch:		GoToAngle(45.0); 	break;
 				case PointPosition::kForwardPortal:		GoToAngle(55.0);	break;
-				case PointPosition::kForwardScale:		GoToAngle(10.0);	break;
+				case PointPosition::kForwardScale:		GoToAngle(11.5);	break;
 				case PointPosition::kUp:				GoToAngle(0.0); 	break;
-				case PointPosition::kReverseScale:		GoToAngle(-10.0);	break;
+				case PointPosition::kReverseScale:		GoToAngle(-11.5);	break;
 				case PointPosition::kReversePortal:		GoToAngle(-55.0);	break;
 				case PointPosition::kReverseSwitch:		GoToAngle(-45.0); 	break;
 				case PointPosition::kReverseMidCollect:	GoToAngle(-75.0); 	break;
@@ -115,7 +119,7 @@ namespace RobotMechanism{
 
 		void SetIntakePower(float power) { m_IntakePower = power; }
 
-		void EnableIntake()		{ SetIntakePower(-0.5);	} //start it
+		void EnableIntake()		{ SetIntakePower(-0.7);	} //start it
 		void ShootIntake()		{ SetIntakePower(1.0); }
 		void ReverseIntake()	{ SetIntakePower(0.3);	} //shoot things out
 		void DisableIntake()	{ SetIntakePower(0.0);	} //stop intake

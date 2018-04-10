@@ -25,6 +25,7 @@ struct {
 			MOLib::Dashboard::Indicator	Enabled{"Drivetrain/Angle/Enabled"};
 			MOLib::Dashboard::Indicator OnTarget{"Drivetrain/Angle/OnTarget"};
 			MOLib::Dashboard::Number	MaxError{"Drivetrain/Angle/Max Error"};
+			MOLib::Dashboard::Number	Output{"Drivetrain/Angle/Output"};
 		} Angle;
 
 		struct {
@@ -52,6 +53,10 @@ struct {
 		MOLib::Dashboard::Indicator		ShooterLim{"Arm/ShooterLim"};
 
 	} Arm;
+
+	struct {
+		MOLib::Dashboard::Indicator		LockState{"Misc/LockState"};
+	} Climber;
 
 	struct {
 		MOLib::Dashboard::Checkbox		LightEnabled{"Vision/LightEnabled"};

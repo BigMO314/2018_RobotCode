@@ -17,21 +17,7 @@ public:
 	Robot() {
 		//delete everything in SmartDashboard, clears clutter
 		nt::DeleteAllEntries(nt::GetDefaultInstance());
-/*
-		Dashboard.Drivetrain.Distance.P.Set(0.038);	//0.035
-		Dashboard.Drivetrain.Distance.I.Set(0.0);
-		Dashboard.Drivetrain.Distance.D.Set(0.07);	//0.061
 
-		Dashboard.Drivetrain.LeftScale.Set(0.69);
-
-		Dashboard.Drivetrain.Angle.P.Set(0.008); //0.024 Potential new values 0.0215  .17
-		Dashboard.Drivetrain.Angle.I.Set(0.0); //.007
-		Dashboard.Drivetrain.Angle.D.Set(0.0); //0.0201 Potential new values 0.0262 .015
-
-		Dashboard.Arm.Angle.P.Set(0.75); // 1.0 Potential new values 0.75
-		Dashboard.Arm.Angle.I.Set(0.0); // 0.0
-		Dashboard.Arm.Angle.D.Set(20.0); // 0.0 Potential new values
-*/
 		Dashboard.Drivetrain.LeftScale.Set(0.75);
 
 		Dashboard.Misc.TuningMode.Set(false);
@@ -147,6 +133,8 @@ public:
 		rbt_Drivetrain->DisableDistancePID();
 		rbt_Drivetrain->DisableLimeLightPID();
 
+		rbt_Climber->Reset();
+
 		if(jmp_CompRobot->Get()) rbt_Drivetrain->ConfigScale(0.75);
 		else rbt_Drivetrain->ConfigScale(Dashboard.Drivetrain.LeftScale.Get(), 0.72, -0.72, -0.72); //First should be 0.7125
 
@@ -158,6 +146,7 @@ public:
 			prd_TeleOperated->Update();
 			rbt_Drivetrain->Update();
 			rbt_Arm->Update();
+			rbt_Climber->Update();
 			if(jmp_CompRobot->Get()) rbt_Drivetrain->ConfigScale(Dashboard.Drivetrain.LeftScale.Get(), 0.75, -0.75, -0.75); //First should be 0.766
 			else if(!Dashboard.Misc.TuningMode.Get()) rbt_Drivetrain->ConfigScale(0.68, 0.72, -0.72, -0.72);
 			else if(Dashboard.Misc.TuningMode.Get())rbt_Drivetrain->ConfigScale(Dashboard.Drivetrain.LeftScale.Get(), 0.72, -0.72, -0.72); //First should be 0.7125
@@ -211,9 +200,10 @@ private:
 	//Create Climber motor and solenoid for Climber
 	WPILib::VictorSP				*mtr_Climb			= new WPILib::VictorSP(5);
 	WPILib::Solenoid				*sol_Climb			= new WPILib::Solenoid(1);
+	WPILib::Solenoid				*sol_Lock			= new WPILib::Solenoid(7);
 
 	//Create Climber object
-	RobotMechanism::Climber			*rbt_Climber		= new RobotMechanism::Climber(mtr_Climb, sol_Climb);
+	RobotMechanism::Climber			*rbt_Climber		= new RobotMechanism::Climber(mtr_Climb, sol_Climb, sol_Lock);
 
 	//Controllers for TeleOperated																													_
 	MOLib::XboxController			*ctl_Driver			= new MOLib::XboxController(0);

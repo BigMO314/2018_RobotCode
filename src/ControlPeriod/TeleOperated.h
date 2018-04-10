@@ -29,6 +29,7 @@ namespace ControlPeriod{
 ////			}
 //
 //			else {
+				//if (ctl_Driver->GetYButton) rbt_Drivetrain->GoToDistance(250);
 				if(!rbt_Drivetrain->IsAnglePIDEnabled() && !rbt_Drivetrain->IsDistancePIDEnabled()){
 					if (ctl_Driver->GetTriggerAxis(XboxController::kLeftHand)) {
 						CheezyDrive(Sign(ctl_Driver->GetY(XboxController::kLeftHand)) * 0.4, Sign(ctl_Driver->GetX(XboxController::kRightHand)) * 0.35);
@@ -39,9 +40,13 @@ namespace ControlPeriod{
 					rbt_Drivetrain->StopDrive();
 				}
 
-				if (ctl_Driver->GetBButton()) { rbt_Climber->Lock(); }
-				if (ctl_Driver->GetXButton()) { rbt_Climber->Release(); }
-				if (ctl_Driver->GetAButton()) { rbt_Climber->Climb(); }
+				if (ctl_Driver->GetTriggerAxis(XboxController::kRightHand)) {
+					if (ctl_Driver->GetBButton()) { rbt_Climber->Reset(); }
+					if (ctl_Driver->GetXButton() && (ctl_Operator->GetTriggerAxis(XboxController::kLeftHand) && ctl_Operator->GetAButton())) { rbt_Climber->Release(); }
+					if (ctl_Driver->GetAButton()) { rbt_Climber->Climb(); }
+					else if (ctl_Driver->GetYButton()) { rbt_Climber->SetClimb(-0.25); }
+					else { rbt_Climber->SetClimb(0.0); }
+				}
 				else { rbt_Climber->SetClimb(0.0); }
 
 				if(!ctl_Driver->GetBumper(XboxController::kLeftHand) || !ctl_Driver->GetBumper(XboxController::kRightHand)) m_CanShoot = true;
@@ -76,7 +81,7 @@ namespace ControlPeriod{
 					else rbt_Arm->Point(RobotMechanism::Arm::PointPosition::kUp);
 				}
 
-				if(ctl_Operator->GetStartButton() && ctl_Operator->GetBackButton()) rbt_Arm->ResetAngle();
+				if(ctl_Operator->GetStartButton() && ctl_Operator->GetBackButton() && ctl_Operator->GetPOV(3)) rbt_Arm->ResetAngle();
 //			}
 
 		}
